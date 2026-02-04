@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: geo-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-geosamples}
+      POSTGRES_USER: ${POSTGRES_USER:-geouser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geopass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-geouser} -d ${POSTGRES_DB:-geosamples}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  db_test:
+    image: postgis/postgis:16-3.4
+    container_name: geo-db-test
+    environment:
+      POSTGRES_DB: geosamples_test
+      POSTGRES_USER: geouser
+      POSTGRES_PASSWORD: geopass
+    volumes:
+      - db_test_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geouser -d geosamples_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build:
+      context: ./services/backend
+    container_name: geo-api
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./services/frontend
+      args:
+        VITE_API_BASE: /api
+    container_name: geo-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  db_data:
+  db_test_data:

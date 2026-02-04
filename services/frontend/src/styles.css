@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.leaflet-draw-actions { display: none !important; }
+.leaflet-draw-tooltip { display: none !important; }
